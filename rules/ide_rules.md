@@ -1,33 +1,31 @@
-# Cursor / VS Code 集成指南
+# ============================================
+# BUG BUSTER V2 – ENFORCED EXECUTION PROTOCOL
+# ============================================
 
-你可以将以下内容添加到项目的 `.cursorrules` 文件中，或者作为 Cursor 的 "Rules for AI" 设置。
+## Trigger Condition
+- Same error persists after 2 fix attempts.
+- User mentions "still error", "3 rounds", or "debug-break".
 
-```markdown
-# Bug 顽固性诊断规则 (3轮法则)
+## Mode: Execution Required
+When triggered, you MUST switch to this protocol. DO NOT propose any code changes until evidence is gathered.
 
-当满足以下任一条件时，AI 必须立即停止当前的修复逻辑，切换到“顽固诊断模式”：
-1. 同一个错误在连续 2-3 轮修复后依然存在。
-2. 用户提到 "still error", "not fixed", "3 rounds", "顽固诊断"。
+## Steps
+1. **Baseline Check**: Run `python src/bug_cracker.py run_tests` to capture the current failure state.
+2. **Classification**: Use `python src/bug_cracker.py classify --error "$STDERR"` to identify the dimension (A/B/C/D).
+3. **Evidence Gathering**:
+   - **Dimension A/B (Logic/State)**: Use `python src/bug_cracker.py inject_logs --file $FILE --line $LINE` to insert debug prints. Ask the user to run the code and share the output.
+   - **Dimension C (External)**: Demand exact minimal input samples and mock external dependencies.
+   - **Dimension D (AI Blind Spot)**: If complex concurrency/reflection is detected, state "UNSOLVABLE - manual review required" and provide detailed logs.
+4. **Minimal Verifiable Fix (MVF)**: Propose exactly ONE change based on runtime evidence, accompanied by a verification command.
+5. **Validation**: After the user applies the fix, ask them to run `run_tests` again.
+6. **Hard Reset**: If the bug persists after 2 cycles (4 total attempts), run `python src/bug_cracker.py reset_prompt` and instruct the user to start a NEW session with the generated prompt.
 
-## 诊断流程
-1. **强制回滚检查**：询问用户最近一个可工作的版本，并建议回滚到该点。
-2. **维度分析**：
-   - A. 局部逻辑 (Logic)
-   - B. 状态污染 (State/Context)
-   - C. 外部依赖 (External/Data)
-   - D. 模型盲区 (Complex/Async)
-3. **最小修复 (MVF)**：仅提供一个核心改动，并附带验证命令。
-4. **禁止猜测**：如果信息不足，必须先向用户索取堆栈信息或输入样本。
-
-## 回复模板
+## Response Template
 ---
-### 🚨 触发顽固诊断 (3轮法则)
-**当前维度**：[A/B/C/D]
-**诊断结论**：简述为什么之前的修复失效。
-**最小修复方案**：
-- 修改文件：`path/to/file`
-- 核心改动：`code snippet`
-**验证命令**：`pytest ...` 或 `curl ...`
-**回退操作**：`git checkout -- ...`
+### 🚨 BUG BUSTER V2 ACTIVATED
+**Dimension**: [A/B/C/D]
+**Evidence Gathering**: [e.g., Logs injected at line 42]
+**Diagnosis**: [Based on runtime output...]
+**MVF**: [Single change]
+**Verify**: `pytest ...`
 ---
-```
